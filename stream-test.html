@@ -11,36 +11,49 @@
     </style>
 </head>
 <body>
-    <!-- Replace YOUR_STREAM_ID with your actual Streampixel share link -->
     <iframe id="streamIframe"
             src="https://share.streampixel.io/69c913c10a480c4a161f3b93"
             allow="autoplay; microphone; clipboard-write">
     </iframe>
 
     <script>
-        window.addEventListener('message', (event) => {
-            if (event.data.type !== 'stream-state') return;
+        const iframe = document.getElementById('streamIframe');
 
-            if (event.data.value === 'loadingComplete') {
-                const ua = navigator.userAgent;
-                const isPhone = /iPhone|Android.*Mobile/i.test(ua);
-                const isTablet = /iPad|Android(?!.*Mobile)/i.test(ua)
-                              || (navigator.maxTouchPoints > 1 && !/Windows/i.test(ua));
-                const needsVirtualControls = isPhone || isTablet;
+        function sendDeviceInfo() {
+            const ua = navigator.userAgent;
+            const isPhone = /iPhone|Android.*Mobile/i.test(ua);
+            const isTablet = /iPad|Android(?!.*Mobile)/i.test(ua)
+                          || (navigator.maxTouchPoints > 1 && !/Windows/i.test(ua));
+            const needsVirtualControls = isPhone || isTablet;
 
-                const iframe = document.getElementById('streamIframe');
-                iframe.contentWindow.postMessage({
-                    type: 'deviceInfo',
+            // Format: no "message" key — custom fields go directly to UE5
+            const payload = {
+                deviceInfo: JSON.stringify({
+                    type: "deviceInfo",
                     isMobile: needsVirtualControls,
                     isTablet: isTablet,
                     isPhone: isPhone
-                }, '*');
+                })
+            };
 
-                console.log('[DeviceDetection] Sent:', {
-                    isPhone: isPhone,
-                    isTablet: isTablet,
-                    isMobile: needsVirtualControls
-                });
+            iframe.contentWindow.postMessage(payload, 'https://share.streampixel.io');
+            console.log('[DeviceDetection] Sent payload:', payload, 'UA:', ua);
+            console.log('[DeviceDetection] isPhone:', isPhone, 'isTablet:', isTablet, 'needsVirtualControls:', needsVirtualControls);
+        }
+
+        // Log ALL messages from the iframe for debugging
+        window.addEventListener('message', (event) => {
+            console.log('[StreamMsg]', event.data);
+
+            if (event.data.type === 'stream-state') {
+                console.log('[StreamState]', event.data.value);
+
+                if (event.data.value === 'loadingComplete') {
+                    // Send immediately and retry after delays to ensure UE5 connection is ready
+                    sendDeviceInfo();
+                    setTimeout(sendDeviceInfo, 2000);
+                    setTimeout(sendDeviceInfo, 5000);
+                }
             }
         });
     </script>
