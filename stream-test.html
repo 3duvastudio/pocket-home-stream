@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Pocket Home</title>
+    <style>
+        * { margin: 0; padding: 0; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+        iframe { width: 100%; height: 100%; border: none; }
+    </style>
+</head>
+<body>
+    <!-- Replace YOUR_STREAM_ID with your actual Streampixel share link -->
+    <iframe id="streamIframe"
+            src="https://share.streampixel.io/69c913c10a480c4a161f3b93"
+            allow="autoplay; microphone; clipboard-write">
+    </iframe>
+
+    <script>
+        window.addEventListener('message', (event) => {
+            if (event.data.type !== 'stream-state') return;
+
+            if (event.data.value === 'loadingComplete') {
+                const ua = navigator.userAgent;
+                const isPhone = /iPhone|Android.*Mobile/i.test(ua);
+                const isTablet = /iPad|Android(?!.*Mobile)/i.test(ua)
+                              || (navigator.maxTouchPoints > 1 && !/Windows/i.test(ua));
+                const needsVirtualControls = isPhone || isTablet;
+
+                const iframe = document.getElementById('streamIframe');
+                iframe.contentWindow.postMessage({
+                    type: 'deviceInfo',
+                    isMobile: needsVirtualControls,
+                    isTablet: isTablet,
+                    isPhone: isPhone
+                }, '*');
+
+                console.log('[DeviceDetection] Sent:', {
+                    isPhone: isPhone,
+                    isTablet: isTablet,
+                    isMobile: needsVirtualControls
+                });
+            }
+        });
+    </script>
+</body>
+</html>
